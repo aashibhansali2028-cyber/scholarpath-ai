@@ -28,7 +28,7 @@ Scholar AI always searches the local database first and Claude only sees the ret
 
 ## Deploy to Vercel
 
-1. Import this repo in Vercel (framework preset: **Other**, no build command). `public/` is served as static files and `api/index.js` runs the API.
+1. Import this repo in Vercel (framework preset: **Other**, no build command). Vercel detects `server.js` and runs its default-exported handler.
 2. Add the environment variable `SESSION_SECRET` (any long random string) so logins stay valid across serverless instances. Optionally add `ANTHROPIC_API_KEY`.
 
 **On Vercel, data resets.** The database lives in `/tmp`, which is per-instance and wiped on cold starts, so it re-seeds with the demo data. The demo accounts always work, but new signups, saved items and tracker changes are temporary. For persistent data, move `db.js` to a hosted database (e.g. Supabase/Neon Postgres or Turso).

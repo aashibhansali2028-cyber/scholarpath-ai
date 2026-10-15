@@ -403,3 +403,5 @@ export async function handler(req, res) {
 }
 
 if (!process.env.VERCEL) http.createServer(handler).listen(PORT, () => console.log(`ScholarPath AI running at http://localhost:${PORT}  (AI: ${AI_ENABLED ? 'Claude' : 'local fallback'})`));
+
+export default handler; // Vercel zero-config entrypoint

@@ -3,3 +3,6 @@ data/
 .vercel/
 .claude/
 .env*
+
+.vercel
+.env*
