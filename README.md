@@ -4,7 +4,7 @@ AI-powered scholarship discovery, matching and application management for studen
 
 ## Run
 
-Requires Node.js 22.13+ (uses the built-in `node:sqlite`). The only dependency is the Anthropic SDK.
+Requires Node.js 22.13+ (uses the built-in `node:sqlite`). No npm dependencies.
 
 ```bash
 npm install
@@ -22,14 +22,14 @@ Demo accounts (also one-click buttons on the login page):
 
 ### AI
 
-Set `ANTHROPIC_API_KEY` to have Claude (`claude-opus-5-5`) write Scholar AI answers, application drafts/feedback and admin data extraction.
+Set `GEMINI_API_KEY` (Google AI Studio) to have Gemini write Scholar AI answers, application drafts/feedback and admin data extraction. The model defaults to `gemini-flash-latest` (override with `GEMINI_MODEL`) and retries once on `gemini-flash-lite-latest` if Google reports the model as overloaded.
 Without a key everything still works: retrieval, matching, template drafts, heuristic feedback and rule-based extraction run locally.
-Scholar AI always searches the local database first and Claude only sees the retrieved records, so it can't recommend scholarships that aren't in the database.
+Scholar AI always searches the local database first and Gemini only sees the retrieved records, so it can't recommend scholarships that aren't in the database.
 
 ## Deploy to Vercel
 
 1. Import this repo in Vercel (framework preset: **Other**, no build command). Vercel detects `server.js` and runs its default-exported handler.
-2. Add the environment variable `SESSION_SECRET` (any long random string) so logins stay valid across serverless instances. Optionally add `ANTHROPIC_API_KEY`.
+2. Add the environment variable `SESSION_SECRET` (any long random string) so logins stay valid across serverless instances. Optionally add `GEMINI_API_KEY`.
 
 **On Vercel, data resets.** The database lives in `/tmp`, which is per-instance and wiped on cold starts, so it re-seeds with the demo data. The demo accounts always work, but new signups, saved items and tracker changes are temporary. For persistent data, move `db.js` to a hosted database (e.g. Supabase/Neon Postgres or Turso).
 

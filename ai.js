@@ -1,32 +1,47 @@
 // AI features. Retrieval and matching always run locally against the scholarship DB, so answers
-// are grounded in real records. If ANTHROPIC_API_KEY is set, Claude writes the prose on top of
-// the retrieved records; otherwise a deterministic template is used. Claude never sees records
+// are grounded in real records. If GEMINI_API_KEY is set, Gemini writes the prose on top of
+// the retrieved records; otherwise a deterministic template is used. The model never sees records
 // beyond the retrieved set and is told not to invent scholarships.
 
 import { allScholarships } from './db.js';
 import { matchScholarship } from './match.js';
 import { COUNTRIES, FIELDS } from './data.js';
 
-export const AI_ENABLED = !!process.env.ANTHROPIC_API_KEY;
-const MODEL = 'claude-opus-5-5';
-let client;
+export const AI_ENABLED = !!process.env.GEMINI_API_KEY;
+const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
-async function claude({ system, prompt, maxTokens = 4000, format }) {
+// If the main model is overloaded or rate-limited, retry once on the lighter model.
+const MODELS = [MODEL, 'gemini-flash-lite-latest'];
+
+async function llm({ system, prompt, maxTokens = 4000, schema }) {
   if (!AI_ENABLED) return null;
-  try {
-    client ??= new (await import('@anthropic-ai/sdk')).default();
-    const res = await client.beta.messages.create({
-      model: MODEL, max_tokens: maxTokens, system,
-      messages: [{ role: 'user', content: prompt }],
-      output_config: { effort: 'low', ...(format && { format }) },
-      betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
-    });
-    if (res.stop_reason === 'refusal') return null;
-    return res.content.filter(b => b.type === 'text').map(b => b.text).join('').trim() || null;
-  } catch (e) {
-    console.error('[ai] Claude request failed, using local fallback:', e.message);
-    return null;
+  for (const model of MODELS) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST', signal: AbortSignal.timeout(60000),
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: maxTokens + 4000, // thinking tokens count against this budget
+            thinkingConfig: { thinkingLevel: 'low' },
+            ...(schema && { responseMimeType: 'application/json', responseJsonSchema: schema }),
+          },
+        }),
+      });
+      const data = await res.json();
+      if ([429, 500, 503].includes(res.status)) { console.warn(`[ai] ${model} unavailable (${res.status}), trying next model`); continue; }
+      if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+      const c = data.candidates?.[0];
+      if (!c || !['STOP', 'MAX_TOKENS'].includes(c.finishReason)) return null; // blocked/safety → local fallback
+      return c.content?.parts?.filter(p => !p.thought).map(p => p.text || '').join('').trim() || null;
+    } catch (e) {
+      console.error(`[ai] Gemini request failed (${model}):`, e.message);
+      return null;
+    }
   }
+  return null;
 }
 
 const DISCLAIMER = 'Eligibility information should always be verified through the official scholarship provider.';
@@ -119,7 +134,7 @@ RECORDS: ${JSON.stringify(records)}
 
 Student question: ${message}`;
 
-  let reply = await claude({ system, prompt, maxTokens: 2000 });
+  let reply = await llm({ system, prompt, maxTokens: 2000 });
   if (!reply) reply = templateReply(message, filters, results, hasFilters);
   if (!reply.includes('verified through the official')) reply += `\n\n_${DISCLAIMER}_`;
   return { reply, scholarshipIds: results.map(r => r.s.id) };
@@ -177,7 +192,7 @@ Target: ${target || 'scholarship application'}
 DOCUMENT:
 ${text}`;
 
-  const out = await claude({ system, prompt: userPrompt, maxTokens: 3000 });
+  const out = await llm({ system, prompt: userPrompt, maxTokens: 3000 });
   return { text: out || (t.draft ? templateDraft(tool, { background, goals, target, essayPrompt }) : heuristicFeedback(tool, text)), ai: !!out };
 }
 
@@ -253,10 +268,10 @@ export async function extract({ url, text }) {
   let source = text?.trim() || '';
   if (url && !source) source = await fetchPageText(url);
   if (source.length < 40) throw Object.assign(new Error('Provide a URL or paste at least a paragraph of scholarship text.'), { status: 400 });
-  const out = await claude({
-    system: 'Extract scholarship details from the source text. Use empty strings/arrays or 0 for anything not explicitly stated — never guess. Convert amounts to an approximate INR number in value_inr (0 if unknown). Countries are study destinations.',
+  const out = await llm({
+    system: 'Extract scholarship details from the source text. Use empty strings/arrays or 0 for anything not explicitly stated — never guess. Nationalities and countries must be country names (e.g. India, not Indian; UK, USA). Convert amounts to an approximate INR number in value_inr (0 if unknown). Countries are study destinations.',
     prompt: `Source URL: ${url || 'n/a'}\n\nSOURCE TEXT:\n${source.slice(0, 40000)}`,
-    maxTokens: 3000, format: { type: 'json_schema', schema: EXTRACT_SCHEMA },
+    maxTokens: 3000, schema: EXTRACT_SCHEMA,
   });
   let data = null;
   try { data = out && JSON.parse(out); } catch { data = null; }

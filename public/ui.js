@@ -100,7 +100,7 @@ export function md(text) {
   const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(^|\s)_(.+?)_(?=\s|$|[.,])/g, '$1<em>$2</em>');
   return text.split(/\n{2,}/).map(block => {
     const lines = block.split('\n');
-    if (lines.every(l => /^\s*[-•]\s/.test(l))) return `<ul>${lines.map(l => `<li>${inline(l.replace(/^\s*[-•]\s/, ''))}</li>`).join('')}</ul>`;
+    if (lines.every(l => /^\s*[-•*]\s/.test(l))) return `<ul>${lines.map(l => `<li>${inline(l.replace(/^\s*[-•*]\s/, ''))}</li>`).join('')}</ul>`;
     return `<p>${lines.map(inline).join('<br>')}</p>`;
   }).join('');
 }

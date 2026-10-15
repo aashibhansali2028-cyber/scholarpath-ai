@@ -304,7 +304,7 @@ const EXAMPLES = ['Find fully funded Masters scholarships in the UK.', "I'm an I
   "Which scholarships don't require GRE?", 'What scholarships are available for students with family income under ₹8 lakh?'];
 export async function assistant(view, _p, query) {
   view.innerHTML = `<div class="page-head"><div><h1 class="row">${ic('sparkles')} Scholar AI</h1><p>Answers come from the ScholarPath scholarship database — never made up.</p></div>
-      <div class="row"><span class="badge ${(await meta()).ai_enabled ? 'ai' : ''}">${(await meta()).ai_enabled ? 'Claude-powered' : 'Database search mode'}</span><button class="btn btn-ghost btn-sm" id="clear">${ic('trash')}Clear chat</button></div></div>
+      <div class="row"><span class="badge ${(await meta()).ai_enabled ? 'ai' : ''}">${(await meta()).ai_enabled ? 'Gemini-powered' : 'Database search mode'}</span><button class="btn btn-ghost btn-sm" id="clear">${ic('trash')}Clear chat</button></div></div>
     <div class="card chat"><div class="msgs" id="msgs"></div>
       <div class="composer"><div class="prompts" id="prompts">${EXAMPLES.map(e => `<button type="button">${esc(e)}</button>`).join('')}</div>
         <form id="chatf"><input class="input" name="m" placeholder="Ask anything about scholarships..." autocomplete="off" aria-label="Message" maxlength="2000"><button class="btn btn-ai" type="submit" aria-label="Send">${ic('send')}Send</button></form></div></div>`;
@@ -355,7 +355,7 @@ export async function writer(view, _p, query) {
     p.volunteering && `Volunteering: ${p.volunteering}`, p.extracurricular && `Activities: ${p.extracurricular}`].filter(Boolean).join('\n');
   const render = () => {
     const isDraft = m.writer_tools[tool].draft;
-    view.innerHTML = `<div class="page-head"><div><h1>AI Application Assistant</h1><p>Help that improves your application — without inventing anything about you.</p></div><span class="badge ${m.ai_enabled ? 'ai' : ''}">${m.ai_enabled ? 'Claude-powered' : 'Template mode (AI key not configured)'}</span></div>
+    view.innerHTML = `<div class="page-head"><div><h1>AI Application Assistant</h1><p>Help that improves your application — without inventing anything about you.</p></div><span class="badge ${m.ai_enabled ? 'ai' : ''}">${m.ai_enabled ? 'Gemini-powered' : 'Template mode (AI key not configured)'}</span></div>
       <div class="tabs" role="tablist">${TOOLS.map(([k, l, i]) => `<button role="tab" data-tool="${k}" class="${k === tool ? 'on' : ''}">${l}</button>`).join('')}</div>
       <div class="grid g2" style="align-items:start">
         <form class="card pad stack" id="wform">

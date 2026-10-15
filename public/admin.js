@@ -108,7 +108,7 @@ export async function admin(view) {
           ${field('Paste scholarship text', area('text', '', 'rows="10" placeholder="Paste the scholarship description, eligibility, deadline, documents…"'))}
           <div class="form-error" role="alert"></div>
           <button class="btn btn-ai" type="submit">${ic('sparkles')}Extract details</button>
-          <p class="xs faint">${data.ai_enabled ? 'Using Claude for extraction.' : 'AI key not configured — using rule-based extraction. Expect more fields to fill manually.'}</p></form>
+          <p class="xs faint">${data.ai_enabled ? 'Using Gemini for extraction.' : 'AI key not configured — using rule-based extraction. Expect more fields to fill manually.'}</p></form>
         <div class="card" id="exout"><div class="empty">${ic('file')}<div class="small">Extracted fields will appear here for review.</div></div></div></div>`;
       $('#exf').onsubmit = async e => {
         e.preventDefault();
